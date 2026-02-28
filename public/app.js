@@ -39,7 +39,8 @@ const elements = {
 
 let map;
 let marker;
-let areaLayer = null;
+let radiusOverlay;
+let squareOverlay;
 let latestFiles = null;
 let previewBlobUrl = null;
 let inputSyncTimer = null;
@@ -76,30 +77,6 @@ function selectedHighways() {
   );
 }
 
-function setStatus(message, isError = false) {
-  elements.statusLine.textContent = message;
-  elements.statusLine.style.color = isError ? "#ff8fbd" : "";
-}
-
-function updateStatDisplay(stats = {}) {
-  elements.roadsStat.textContent = stats.roads ?? "-";
-  elements.nodesStat.textContent = stats.nodes ?? "-";
-  elements.edgesStat.textContent = stats.edges ?? "-";
-}
-
-function updateAreaValueLabels() {
-  const radius = parseNumber(elements.radiusInput.value, 1800);
-  const square = parseNumber(elements.squareInput.value, 2600);
-  elements.radiusValue.textContent = `${formatMeters.format(radius)} m`;
-  elements.squareValue.textContent = `${formatMeters.format(square)} m`;
-
-  if (selectedAreaMode() === "radius") {
-    elements.areaReadout.textContent = `Radius · ${formatMeters.format(radius)} m`;
-  } else {
-    elements.areaReadout.textContent = `Square · ${formatMeters.format(square)} m`;
-  }
-}
-
 function currentCenter() {
   return {
     lat: parseNumber(elements.lat.value, DEFAULT_CENTER.lat),
@@ -118,41 +95,72 @@ function squareBoundsFromCenter(lat, lon, lengthMeters) {
   ];
 }
 
+function setStatus(message, isError = false) {
+  elements.statusLine.textContent = message;
+  elements.statusLine.style.color = isError ? "#ff8fbd" : "";
+}
+
+function updateStatDisplay(stats = {}) {
+  elements.roadsStat.textContent = stats.roads ?? "-";
+  elements.nodesStat.textContent = stats.nodes ?? "-";
+  elements.edgesStat.textContent = stats.edges ?? "-";
+}
+
+function updateRangeTrack(input) {
+  const min = Number(input.min || 0);
+  const max = Number(input.max || 1);
+  const value = Number(input.value || min);
+  const percent = ((value - min) / (max - min)) * 100;
+  input.style.setProperty("--track-fill", `${Math.max(0, Math.min(100, percent))}%`);
+}
+
+function updateAreaValueLabels() {
+  const radius = parseNumber(elements.radiusInput.value, 1800);
+  const square = parseNumber(elements.squareInput.value, 2600);
+
+  updateRangeTrack(elements.radiusInput);
+  updateRangeTrack(elements.squareInput);
+
+  elements.radiusValue.textContent = `${formatMeters.format(radius)} m`;
+  elements.squareValue.textContent = `${formatMeters.format(square)} m`;
+
+  if (selectedAreaMode() === "radius") {
+    elements.areaReadout.textContent = `Radius · ${formatMeters.format(radius)} m`;
+  } else {
+    elements.areaReadout.textContent = `Square · ${formatMeters.format(square)} m`;
+  }
+}
+
 function updateAreaOverlay() {
-  if (!map) {
+  if (!map || !radiusOverlay || !squareOverlay) {
     return;
   }
 
-  if (areaLayer) {
-    areaLayer.remove();
-    areaLayer = null;
-  }
-
   const { lat, lon } = currentCenter();
+  const radius = parseNumber(elements.radiusInput.value, 1800);
+  const squareLength = parseNumber(elements.squareInput.value, 2600);
   const mode = selectedAreaMode();
 
-  if (mode === "radius") {
-    const radius = parseNumber(elements.radiusInput.value, 1800);
-    areaLayer = L.circle([lat, lon], {
-      radius,
-      color: "#00f1ff",
-      weight: 2,
-      fillColor: "#00f1ff",
-      fillOpacity: 0.08,
-      className: "selection-overlay",
-    });
-  } else {
-    const squareLength = parseNumber(elements.squareInput.value, 2600);
-    areaLayer = L.rectangle(squareBoundsFromCenter(lat, lon, squareLength), {
-      color: "#ff5bd6",
-      weight: 2,
-      fillColor: "#ff5bd6",
-      fillOpacity: 0.08,
-      className: "selection-overlay",
-    });
-  }
+  radiusOverlay.setLatLng([lat, lon]);
+  radiusOverlay.setRadius(radius);
 
-  areaLayer.addTo(map);
+  squareOverlay.setBounds(squareBoundsFromCenter(lat, lon, squareLength));
+
+  if (mode === "radius") {
+    if (!map.hasLayer(radiusOverlay)) {
+      radiusOverlay.addTo(map);
+    }
+    if (map.hasLayer(squareOverlay)) {
+      map.removeLayer(squareOverlay);
+    }
+  } else {
+    if (!map.hasLayer(squareOverlay)) {
+      squareOverlay.addTo(map);
+    }
+    if (map.hasLayer(radiusOverlay)) {
+      map.removeLayer(radiusOverlay);
+    }
+  }
 }
 
 function updateAreaFieldVisibility() {
@@ -353,6 +361,10 @@ function initMap() {
     maxZoom: 18,
   }).setView([DEFAULT_CENTER.lat, DEFAULT_CENTER.lon], 13);
 
+  map.createPane("selectionPane");
+  map.getPane("selectionPane").style.zIndex = "450";
+  map.getPane("selectionPane").style.pointerEvents = "none";
+
   L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
     subdomains: "abcd",
     maxZoom: 20,
@@ -371,6 +383,40 @@ function initMap() {
     autoPan: true,
     icon: markerIcon,
   }).addTo(map);
+
+  radiusOverlay = L.circle([DEFAULT_CENTER.lat, DEFAULT_CENTER.lon], {
+    pane: "selectionPane",
+    radius: parseNumber(elements.radiusInput.value, 1800),
+    color: "#00f1ff",
+    weight: 2.5,
+    fillColor: "#00f1ff",
+    fillOpacity: 0.15,
+    dashArray: "8 6",
+    className: "selection-overlay radius-overlay",
+  });
+
+  squareOverlay = L.rectangle(
+    squareBoundsFromCenter(
+      DEFAULT_CENTER.lat,
+      DEFAULT_CENTER.lon,
+      parseNumber(elements.squareInput.value, 2600),
+    ),
+    {
+      pane: "selectionPane",
+      color: "#ff5bd6",
+      weight: 2.5,
+      fillColor: "#ff5bd6",
+      fillOpacity: 0.15,
+      dashArray: "10 7",
+      className: "selection-overlay square-overlay",
+    },
+  );
+
+  marker.on("drag", () => {
+    const position = marker.getLatLng();
+    updateCenterInputs(position.lat, position.lng);
+    updateAreaOverlay();
+  });
 
   marker.on("dragend", () => {
     const position = marker.getLatLng();
