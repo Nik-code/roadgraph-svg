@@ -17,6 +17,7 @@ const elements = {
   squareValue: document.getElementById("square-value"),
   centerReadout: document.getElementById("center-readout"),
   areaReadout: document.getElementById("area-readout"),
+  mapModeBadge: document.getElementById("map-mode-badge"),
   generateBtn: document.getElementById("generate-btn"),
   statusLine: document.getElementById("status-line"),
   roadsStat: document.getElementById("roads-stat"),
@@ -35,6 +36,8 @@ const elements = {
   canvasWidth: document.getElementById("canvas-width"),
   canvasHeight: document.getElementById("canvas-height"),
   downloads: Array.from(document.querySelectorAll("[data-download]")),
+  tabBtns: Array.from(document.querySelectorAll(".tab-btn")),
+  tabPanes: Array.from(document.querySelectorAll(".tab-pane")),
 };
 
 let map;
@@ -44,6 +47,28 @@ let squareOverlay;
 let latestFiles = null;
 let previewBlobUrl = null;
 let inputSyncTimer = null;
+let rateLimitInterval = null;
+
+function startRateLimitTimer(waitTimeSeconds) {
+  elements.generateBtn.disabled = true;
+  let remaining = waitTimeSeconds;
+
+  if (rateLimitInterval) clearInterval(rateLimitInterval);
+
+  const tick = () => {
+    if (remaining <= 0) {
+      clearInterval(rateLimitInterval);
+      setStatus("Ready. You may generate again.");
+      elements.generateBtn.disabled = false;
+    } else {
+      setStatus(`Rate limit reached. Please wait ${remaining}s...`, true);
+      remaining -= 1;
+    }
+  };
+
+  tick();
+  rateLimitInterval = setInterval(tick, 1000);
+}
 
 function toFixedCoord(value) {
   return Number(value).toFixed(6);
@@ -126,8 +151,16 @@ function updateAreaValueLabels() {
 
   if (selectedAreaMode() === "radius") {
     elements.areaReadout.textContent = `Radius · ${formatMeters.format(radius)} m`;
+    if (elements.mapModeBadge) {
+      elements.mapModeBadge.textContent = `◉ RADIUS · ${formatMeters.format(radius)} m`;
+      elements.mapModeBadge.className = "map-mode-badge map-mode-radius";
+    }
   } else {
     elements.areaReadout.textContent = `Square · ${formatMeters.format(square)} m`;
+    if (elements.mapModeBadge) {
+      elements.mapModeBadge.textContent = `▢ SQUARE · ${formatMeters.format(square)} m`;
+      elements.mapModeBadge.className = "map-mode-badge map-mode-square";
+    }
   }
 }
 
@@ -180,13 +213,14 @@ function updateCenterInputs(lat, lon) {
 
 function setMapCenter(lat, lon, shouldPan = true) {
   const clampedLat = Math.max(-90, Math.min(90, lat));
-  const clampedLon = Math.max(-180, Math.min(180, lon));
+  // Wrap longitude instead of clamping it (-180 to 180)
+  const wrappedLon = ((lon % 360) + 540) % 360 - 180;
 
-  updateCenterInputs(clampedLat, clampedLon);
-  marker.setLatLng([clampedLat, clampedLon]);
+  updateCenterInputs(clampedLat, wrappedLon);
+  marker.setLatLng([clampedLat, wrappedLon]);
 
   if (shouldPan) {
-    map.panTo([clampedLat, clampedLon], { animate: true, duration: 0.35 });
+    map.panTo([clampedLat, wrappedLon], { animate: true, duration: 0.35 });
   }
 
   updateAreaOverlay();
@@ -262,7 +296,7 @@ async function runGeneration() {
   const payload = buildPayload();
 
   elements.generateBtn.disabled = true;
-  setStatus("Generating map.svg, roads.geojson and graph data...");
+  setStatus("Generating map.svg and graph data...");
 
   try {
     const response = await fetch("/api/generate", {
@@ -276,6 +310,10 @@ async function runGeneration() {
     const result = await response.json();
 
     if (!response.ok || !result.ok) {
+      if (response.status === 429 && result.waitTime) {
+        startRateLimitTimer(result.waitTime);
+        return; // keep disabled until timer finishes
+      }
       throw new Error(result.error || "Generation failed.");
     }
 
@@ -289,9 +327,12 @@ async function runGeneration() {
 
     const elapsed = result.meta?.elapsedMs ? `${result.meta.elapsedMs}ms` : "done";
     setStatus(`Generated successfully in ${elapsed}.`);
+    elements.generateBtn.disabled = false;
+
+    // Auto-switch to results tab on successful generation
+    switchTab("result-tab");
   } catch (error) {
     setStatus(error.message || "Failed to generate output files.", true);
-  } finally {
     elements.generateBtn.disabled = false;
   }
 }
@@ -311,7 +352,27 @@ function downloadContent(fileName, content) {
   URL.revokeObjectURL(url);
 }
 
+function switchTab(tabId) {
+  elements.tabBtns.forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.tab === tabId);
+  });
+  elements.tabPanes.forEach(pane => {
+    pane.classList.toggle("active", pane.id === tabId);
+  });
+
+  if (tabId === "map-tab" && map) {
+    // Invalidate map size so Leaflet redrawing works flawlessly after being hidden
+    setTimeout(() => map.invalidateSize(), 10);
+  }
+}
+
 function bindEvents() {
+  elements.tabBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      switchTab(btn.dataset.tab);
+    });
+  });
+
   document.querySelectorAll('input[name="areaMode"]').forEach((input) => {
     input.addEventListener("change", () => {
       updateAreaFieldVisibility();
@@ -359,6 +420,7 @@ function initMap() {
     zoomControl: true,
     minZoom: 4,
     maxZoom: 18,
+    worldCopyJump: true,
   }).setView([DEFAULT_CENTER.lat, DEFAULT_CENTER.lon], 13);
 
   map.createPane("selectionPane");
@@ -387,11 +449,11 @@ function initMap() {
   radiusOverlay = L.circle([DEFAULT_CENTER.lat, DEFAULT_CENTER.lon], {
     pane: "selectionPane",
     radius: parseNumber(elements.radiusInput.value, 1800),
-    color: "#00f1ff",
-    weight: 2.5,
-    fillColor: "#00f1ff",
-    fillOpacity: 0.15,
-    dashArray: "8 6",
+    color: "#00f5ff",
+    weight: 4,
+    fillColor: "#00f5ff",
+    fillOpacity: 0.35,
+    dashArray: "0",
     className: "selection-overlay radius-overlay",
   });
 
@@ -403,31 +465,33 @@ function initMap() {
     ),
     {
       pane: "selectionPane",
-      color: "#ff5bd6",
-      weight: 2.5,
-      fillColor: "#ff5bd6",
-      fillOpacity: 0.15,
-      dashArray: "10 7",
+      color: "#ff0090",
+      weight: 4,
+      fillColor: "#ff0090",
+      fillOpacity: 0.35,
+      dashArray: "0",
       className: "selection-overlay square-overlay",
     },
   );
 
   marker.on("drag", () => {
-    const position = marker.getLatLng();
+    const position = marker.getLatLng().wrap();
     updateCenterInputs(position.lat, position.lng);
     updateAreaOverlay();
   });
 
   marker.on("dragend", () => {
-    const position = marker.getLatLng();
+    const position = marker.getLatLng().wrap();
+    marker.setLatLng(position);
     updateCenterInputs(position.lat, position.lng);
     updateAreaOverlay();
     map.panTo(position, { animate: true, duration: 0.25 });
   });
 
   map.on("click", (event) => {
-    marker.setLatLng(event.latlng);
-    updateCenterInputs(event.latlng.lat, event.latlng.lng);
+    const position = event.latlng.wrap();
+    marker.setLatLng(position);
+    updateCenterInputs(position.lat, position.lng);
     updateAreaOverlay();
   });
 

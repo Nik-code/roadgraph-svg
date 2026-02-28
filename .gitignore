@@ -3,3 +3,8 @@ node_modules
 .DS_Store
 coverage
 npm-debug.log*
+.next/
+out/
+build/
+.env*
+.vercel

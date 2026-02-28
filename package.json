@@ -5,9 +5,9 @@
   "type": "module",
   "main": "server/index.js",
   "scripts": {
-    "dev": "node server/index.js",
-    "dev:watch": "node --watch server/index.js",
-    "start": "node server/index.js"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
   "keywords": [
     "osm",
@@ -31,5 +31,10 @@
   "homepage": "https://github.com/username/roadgraph-svg#readme",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "next": "^16.1.6",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
   }
 }

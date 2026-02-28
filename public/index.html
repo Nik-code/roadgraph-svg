@@ -1,195 +1,205 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>roadgraph-svg — Neural Mapping Console</title>
-    <meta
-      name="description"
-      content="Generate clean, scriptable SVG road maps from OpenStreetMap coordinates."
-    />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body>
-    <div class="background-grid" aria-hidden="true"></div>
-    <div class="background-glow glow-a" aria-hidden="true"></div>
-    <div class="background-glow glow-b" aria-hidden="true"></div>
-    <div class="scanlines" aria-hidden="true"></div>
 
-    <div class="app-shell">
-      <header class="topbar panel">
-        <div class="brand-wrap">
-          <span class="brand-sigil">RG</span>
-          <div>
-            <p class="brand-kicker">◈ NEURAL MAPPING CONSOLE ◈</p>
-            <p class="brand-title">
-              <span class="glitch" data-text="roadgraph-svg">roadgraph-svg</span>
-            </p>
-          </div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>roadgraph-svg — Neural Mapping Console</title>
+  <meta name="description" content="Generate clean, scriptable SVG road maps from OpenStreetMap coordinates." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="/styles.css?v=3" />
+</head>
+
+<body>
+  <div class="background-grid" aria-hidden="true"></div>
+  <div class="background-glow glow-a" aria-hidden="true"></div>
+  <div class="background-glow glow-b" aria-hidden="true"></div>
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <header class="topbar panel">
+      <div class="brand-wrap">
+        <span class="brand-sigil">RG</span>
+        <div>
+          <p class="brand-kicker">◈ NEURAL MAPPING CONSOLE ◈</p>
+          <p class="brand-title">
+            <span class="glitch" data-text="roadgraph-svg">roadgraph-svg</span>
+          </p>
         </div>
-        <p class="tagline">Precision in <span>Neon&nbsp;Grids</span></p>
-      </header>
+      </div>
+      <p class="tagline">Precision in <span>Neon&nbsp;Grids</span></p>
+    </header>
 
-      <main class="workspace">
-        <aside class="panel controls-panel">
-          <div class="controls-head">
-            <h1>Map Generator</h1>
-            <p>Tune extraction, style, and graph output from one command deck.</p>
-          </div>
+    <main class="workspace">
+      <aside class="panel controls-panel">
+        <div class="controls-head">
+          <h1>Map Generator</h1>
+          <p>Tune extraction, style, and graph output from one command deck.</p>
+        </div>
 
-          <form id="controls-form">
-            <section class="module">
-              <div class="module-head">
-                <h2>Location</h2>
-                <span>Center Point</span>
-              </div>
-              <div class="grid-two">
-                <label>
-                  Latitude
-                  <input id="lat-input" name="lat" type="number" step="0.000001" required />
-                </label>
-                <label>
-                  Longitude
-                  <input id="lon-input" name="lon" type="number" step="0.000001" required />
-                </label>
-              </div>
-            </section>
-
-            <section class="module">
-              <div class="module-head">
-                <h2>Area Query</h2>
-                <span>Radius or Square</span>
-              </div>
-
-              <div class="mode-switch">
-                <label>
-                  <input type="radio" name="areaMode" value="radius" checked />
-                  Radius
-                </label>
-                <label>
-                  <input type="radio" name="areaMode" value="square" />
-                  Square
-                </label>
-              </div>
-
-              <label id="radius-field" class="range-control">
-                <div class="range-title-row">
-                  <span>Radius</span>
-                  <strong id="radius-value">1,800 m</strong>
-                </div>
-                <input id="radius-input" type="range" min="100" max="25000" step="50" value="1800" />
+        <form id="controls-form">
+          <section class="module">
+            <div class="module-head">
+              <h2>Location</h2>
+              <span>Center Point</span>
+            </div>
+            <div class="grid-two">
+              <label>
+                Latitude
+                <input id="lat-input" name="lat" type="number" step="0.000001" required />
               </label>
-
-              <label id="square-field" class="range-control is-hidden">
-                <div class="range-title-row">
-                  <span>Square Length</span>
-                  <strong id="square-value">2,600 m</strong>
-                </div>
-                <input id="square-input" type="range" min="100" max="30000" step="50" value="2600" />
+              <label>
+                Longitude
+                <input id="lon-input" name="lon" type="number" step="0.000001" required />
               </label>
-            </section>
+            </div>
+          </section>
 
-            <section class="module">
-              <div class="module-head">
-                <h2>Extraction</h2>
-                <span>Road Inclusion</span>
-              </div>
+          <section class="module">
+            <div class="module-head">
+              <h2>Area Query</h2>
+              <span>Radius or Square</span>
+            </div>
 
-              <label class="toggle-row">
-                <input id="include-graph" type="checkbox" checked />
-                Include graph.json
+            <div class="mode-switch">
+              <label>
+                <input type="radio" name="areaMode" value="radius" checked />
+                Radius
               </label>
+              <label>
+                <input type="radio" name="areaMode" value="square" />
+                Square
+              </label>
+            </div>
 
-              <h3>Highway Types</h3>
-              <div class="chip-grid" id="highway-grid">
-                <label class="chip"><input type="checkbox" value="motorway" checked /><span>motorway</span></label>
-                <label class="chip"><input type="checkbox" value="motorway_link" checked /><span>motorway_link</span></label>
-                <label class="chip"><input type="checkbox" value="trunk" checked /><span>trunk</span></label>
-                <label class="chip"><input type="checkbox" value="trunk_link" checked /><span>trunk_link</span></label>
-                <label class="chip"><input type="checkbox" value="primary" checked /><span>primary</span></label>
-                <label class="chip"><input type="checkbox" value="primary_link" checked /><span>primary_link</span></label>
-                <label class="chip"><input type="checkbox" value="secondary" checked /><span>secondary</span></label>
-                <label class="chip"><input type="checkbox" value="secondary_link" checked /><span>secondary_link</span></label>
-                <label class="chip"><input type="checkbox" value="tertiary" checked /><span>tertiary</span></label>
-                <label class="chip"><input type="checkbox" value="tertiary_link" checked /><span>tertiary_link</span></label>
-                <label class="chip"><input type="checkbox" value="residential" checked /><span>residential</span></label>
-                <label class="chip"><input type="checkbox" value="service" checked /><span>service</span></label>
-                <label class="chip"><input type="checkbox" value="unclassified" checked /><span>unclassified</span></label>
-                <label class="chip"><input type="checkbox" value="living_street" checked /><span>living_street</span></label>
-                <label class="chip"><input type="checkbox" value="road" checked /><span>road</span></label>
+            <label id="radius-field" class="range-control">
+              <div class="range-title-row">
+                <span>Radius</span>
+                <strong id="radius-value">1,800 m</strong>
               </div>
-            </section>
+              <input id="radius-input" type="range" min="100" max="7000" step="50" value="1800" />
+            </label>
 
-            <section class="module">
-              <div class="module-head">
-                <h2>Theme Matrix</h2>
-                <span>SVG Styling</span>
+            <label id="square-field" class="range-control is-hidden">
+              <div class="range-title-row">
+                <span>Square Length</span>
+                <strong id="square-value">2,600 m</strong>
               </div>
+              <input id="square-input" type="range" min="100" max="7000" step="50" value="2600" />
+            </label>
+          </section>
 
-              <h3>Palette</h3>
-              <div class="grid-three">
-                <label>
-                  Background
-                  <input id="background-color" type="color" value="#101317" />
-                </label>
-                <label>
-                  Major
-                  <input id="major-color" type="color" value="#b7bcc5" />
-                </label>
-                <label>
-                  Minor
-                  <input id="minor-color" type="color" value="#6f7682" />
-                </label>
-              </div>
+          <section class="module">
+            <div class="module-head">
+              <h2>Extraction</h2>
+              <span>Road Inclusion</span>
+            </div>
 
-              <h3>Stroke</h3>
-              <div class="grid-three">
-                <label>
-                  Local
-                  <input id="local-color" type="color" value="#3e4652" />
-                </label>
-                <label>
-                  Major Width
-                  <input id="major-width" type="number" value="3.6" min="0.4" max="30" step="0.1" />
-                </label>
-                <label>
-                  Minor Width
-                  <input id="minor-width" type="number" value="2.2" min="0.2" max="24" step="0.1" />
-                </label>
-              </div>
+            <label class="toggle-row">
+              <input id="include-graph" type="checkbox" checked />
+              Include graph.json
+            </label>
 
-              <h3>Canvas</h3>
-              <div class="grid-three">
-                <label>
-                  Local Width
-                  <input id="local-width" type="number" value="1.25" min="0.1" max="20" step="0.05" />
-                </label>
-                <label>
-                  Width
-                  <input id="canvas-width" type="number" value="1200" min="500" max="3000" step="10" />
-                </label>
-                <label>
-                  Height
-                  <input id="canvas-height" type="number" value="900" min="400" max="3000" step="10" />
-                </label>
-              </div>
-            </section>
+            <h3>Highway Types</h3>
+            <div class="chip-grid" id="highway-grid">
+              <label class="chip"><input type="checkbox" value="motorway" checked /><span>motorway</span></label>
+              <label class="chip"><input type="checkbox" value="motorway_link"
+                  checked /><span>motorway_link</span></label>
+              <label class="chip"><input type="checkbox" value="trunk" checked /><span>trunk</span></label>
+              <label class="chip"><input type="checkbox" value="trunk_link" checked /><span>trunk_link</span></label>
+              <label class="chip"><input type="checkbox" value="primary" checked /><span>primary</span></label>
+              <label class="chip"><input type="checkbox" value="primary_link"
+                  checked /><span>primary_link</span></label>
+              <label class="chip"><input type="checkbox" value="secondary" checked /><span>secondary</span></label>
+              <label class="chip"><input type="checkbox" value="secondary_link"
+                  checked /><span>secondary_link</span></label>
+              <label class="chip"><input type="checkbox" value="tertiary" checked /><span>tertiary</span></label>
+              <label class="chip"><input type="checkbox" value="tertiary_link"
+                  checked /><span>tertiary_link</span></label>
+              <label class="chip"><input type="checkbox" value="residential" checked /><span>residential</span></label>
+              <label class="chip"><input type="checkbox" value="service" checked /><span>service</span></label>
+              <label class="chip"><input type="checkbox" value="unclassified"
+                  checked /><span>unclassified</span></label>
+              <label class="chip"><input type="checkbox" value="living_street"
+                  checked /><span>living_street</span></label>
+              <label class="chip"><input type="checkbox" value="road" checked /><span>road</span></label>
+            </div>
+          </section>
 
-            <button type="submit" id="generate-btn">
-              <span class="btn-icon">⬡</span> Generate Outputs
-            </button>
-          </form>
-        </aside>
+          <section class="module">
+            <div class="module-head">
+              <h2>Theme Matrix</h2>
+              <span>SVG Styling</span>
+            </div>
 
-        <section class="visual-panel">
-          <div class="panel map-card">
+            <h3>Palette</h3>
+            <div class="grid-three">
+              <label>
+                Background
+                <input id="background-color" type="color" value="#101317" />
+              </label>
+              <label>
+                Major
+                <input id="major-color" type="color" value="#b7bcc5" />
+              </label>
+              <label>
+                Minor
+                <input id="minor-color" type="color" value="#6f7682" />
+              </label>
+            </div>
+
+            <h3>Stroke</h3>
+            <div class="grid-three">
+              <label>
+                Local
+                <input id="local-color" type="color" value="#3e4652" />
+              </label>
+              <label>
+                Major Width
+                <input id="major-width" type="number" value="3.6" min="0.4" max="30" step="0.1" />
+              </label>
+              <label>
+                Minor Width
+                <input id="minor-width" type="number" value="2.2" min="0.2" max="24" step="0.1" />
+              </label>
+            </div>
+
+            <h3>Canvas</h3>
+            <div class="grid-three">
+              <label>
+                Local Width
+                <input id="local-width" type="number" value="1.25" min="0.1" max="20" step="0.05" />
+              </label>
+              <label>
+                Width
+                <input id="canvas-width" type="number" value="1200" min="500" max="3000" step="10" />
+              </label>
+              <label>
+                Height
+                <input id="canvas-height" type="number" value="900" min="400" max="3000" step="10" />
+              </label>
+            </div>
+          </section>
+
+          <button type="submit" id="generate-btn">
+            <span class="btn-icon">⬡</span> Generate Outputs
+          </button>
+        </form>
+      </aside>
+
+      <section class="visual-panel">
+        <div class="tabs-header">
+          <button type="button" class="tab-btn active" data-tab="map-tab">Map View</button>
+          <button type="button" class="tab-btn" data-tab="result-tab">Output Results</button>
+        </div>
+
+        <div class="tab-content-container">
+          <div id="map-tab" class="panel map-card tab-pane active">
             <div class="map-hud">
               <div>
                 <p>Map Selection</p>
@@ -199,11 +209,14 @@
                 <p>Area Window</p>
                 <span id="area-readout">Radius · 1,800 m</span>
               </div>
+              <div class="map-mode-badge" id="map-mode-badge" aria-live="polite">
+                ◉ RADIUS ACTIVE
+              </div>
             </div>
             <div id="map" aria-label="Map picker"></div>
           </div>
 
-          <div class="panel output-card">
+          <div id="result-tab" class="panel output-card tab-pane">
             <div class="output-header">
               <div>
                 <h2>Generated Output</h2>
@@ -232,15 +245,16 @@
 
             <div class="download-row">
               <button type="button" data-download="map.svg" disabled>↓ map.svg</button>
-              <button type="button" data-download="roads.geojson" disabled>↓ roads.geojson</button>
               <button type="button" data-download="graph.json" disabled>↓ graph.json</button>
             </div>
           </div>
-        </section>
-      </main>
-    </div>
+        </div>
+      </section>
+    </main>
+  </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script type="module" src="/app.js"></script>
-  </body>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module" src="/app.js?v=3"></script>
+</body>
+
 </html>

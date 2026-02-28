@@ -188,5 +188,3 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 MIT. See [LICENSE](LICENSE).
 
 ---
-
-**Before publishing:** Update the repository URL in `package.json` (`repository`, `bugs`, `homepage`) to point to your GitHub repo.

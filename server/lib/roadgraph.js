@@ -174,32 +174,7 @@ function extractRoads(overpassPayload) {
   return roads;
 }
 
-function roadsToGeoJSON(roads, meta) {
-  return {
-    type: "FeatureCollection",
-    metadata: meta,
-    features: roads.map((road) => ({
-      type: "Feature",
-      id: `way-${road.wayId}`,
-      properties: {
-        wayId: road.wayId,
-        highway: road.highway,
-        name: road.name,
-        ref: road.ref,
-        oneway: road.oneway,
-        lanes: road.tags.lanes || null,
-        maxspeed: road.tags.maxspeed || null,
-        surface: road.tags.surface || null,
-        bridge: road.tags.bridge || null,
-        tunnel: road.tags.tunnel || null,
-      },
-      geometry: {
-        type: "LineString",
-        coordinates: road.nodes.map((node) => [node.lon, node.lat]),
-      },
-    })),
-  };
-}
+
 
 function projectRoads(roads, theme) {
   const nodeProjection = new Map();
@@ -497,7 +472,7 @@ export async function generateRoadGraph(options) {
     elapsedMs: Date.now() - startedAt,
   };
 
-  const roadsGeojson = roadsToGeoJSON(roads, meta);
+
   const graph = includeGraph ? buildGraph(roads, projection.nodeProjection, meta) : null;
   const mapSvg = renderSvg(projection.projectedRoads, normalizedTheme, meta);
 
@@ -509,7 +484,6 @@ export async function generateRoadGraph(options) {
       edges: graph ? graph.edges.length : null,
     },
     mapSvg,
-    roadsGeojson,
     graph,
     overpassQuery: overpass.query,
   };
