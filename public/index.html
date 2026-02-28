@@ -3,10 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>roadgraph-svg</title>
+    <title>roadgraph-svg — Neural Mapping Console</title>
     <meta
       name="description"
       content="Generate clean, scriptable SVG road maps from OpenStreetMap coordinates."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
     />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="/styles.css" />
@@ -15,17 +21,20 @@
     <div class="background-grid" aria-hidden="true"></div>
     <div class="background-glow glow-a" aria-hidden="true"></div>
     <div class="background-glow glow-b" aria-hidden="true"></div>
+    <div class="scanlines" aria-hidden="true"></div>
 
     <div class="app-shell">
       <header class="topbar panel">
         <div class="brand-wrap">
           <span class="brand-sigil">RG</span>
           <div>
-            <p class="brand-kicker">NEURAL MAPPING CONSOLE</p>
-            <p class="brand-title">roadgraph-svg</p>
+            <p class="brand-kicker">◈ NEURAL MAPPING CONSOLE ◈</p>
+            <p class="brand-title">
+              <span class="glitch" data-text="roadgraph-svg">roadgraph-svg</span>
+            </p>
           </div>
         </div>
-        <p class="tagline">Precision in <span>Neon Grids</span></p>
+        <p class="tagline">Precision in <span>Neon&nbsp;Grids</span></p>
       </header>
 
       <main class="workspace">
@@ -100,21 +109,21 @@
 
               <h3>Highway Types</h3>
               <div class="chip-grid" id="highway-grid">
-                <label class="chip"><input type="checkbox" value="motorway" checked />motorway</label>
-                <label class="chip"><input type="checkbox" value="motorway_link" checked />motorway_link</label>
-                <label class="chip"><input type="checkbox" value="trunk" checked />trunk</label>
-                <label class="chip"><input type="checkbox" value="trunk_link" checked />trunk_link</label>
-                <label class="chip"><input type="checkbox" value="primary" checked />primary</label>
-                <label class="chip"><input type="checkbox" value="primary_link" checked />primary_link</label>
-                <label class="chip"><input type="checkbox" value="secondary" checked />secondary</label>
-                <label class="chip"><input type="checkbox" value="secondary_link" checked />secondary_link</label>
-                <label class="chip"><input type="checkbox" value="tertiary" checked />tertiary</label>
-                <label class="chip"><input type="checkbox" value="tertiary_link" checked />tertiary_link</label>
-                <label class="chip"><input type="checkbox" value="residential" checked />residential</label>
-                <label class="chip"><input type="checkbox" value="service" checked />service</label>
-                <label class="chip"><input type="checkbox" value="unclassified" checked />unclassified</label>
-                <label class="chip"><input type="checkbox" value="living_street" checked />living_street</label>
-                <label class="chip"><input type="checkbox" value="road" checked />road</label>
+                <label class="chip"><input type="checkbox" value="motorway" checked /><span>motorway</span></label>
+                <label class="chip"><input type="checkbox" value="motorway_link" checked /><span>motorway_link</span></label>
+                <label class="chip"><input type="checkbox" value="trunk" checked /><span>trunk</span></label>
+                <label class="chip"><input type="checkbox" value="trunk_link" checked /><span>trunk_link</span></label>
+                <label class="chip"><input type="checkbox" value="primary" checked /><span>primary</span></label>
+                <label class="chip"><input type="checkbox" value="primary_link" checked /><span>primary_link</span></label>
+                <label class="chip"><input type="checkbox" value="secondary" checked /><span>secondary</span></label>
+                <label class="chip"><input type="checkbox" value="secondary_link" checked /><span>secondary_link</span></label>
+                <label class="chip"><input type="checkbox" value="tertiary" checked /><span>tertiary</span></label>
+                <label class="chip"><input type="checkbox" value="tertiary_link" checked /><span>tertiary_link</span></label>
+                <label class="chip"><input type="checkbox" value="residential" checked /><span>residential</span></label>
+                <label class="chip"><input type="checkbox" value="service" checked /><span>service</span></label>
+                <label class="chip"><input type="checkbox" value="unclassified" checked /><span>unclassified</span></label>
+                <label class="chip"><input type="checkbox" value="living_street" checked /><span>living_street</span></label>
+                <label class="chip"><input type="checkbox" value="road" checked /><span>road</span></label>
               </div>
             </section>
 
@@ -173,7 +182,9 @@
               </div>
             </section>
 
-            <button type="submit" id="generate-btn">Generate Outputs</button>
+            <button type="submit" id="generate-btn">
+              <span class="btn-icon">⬡</span> Generate Outputs
+            </button>
           </form>
         </aside>
 
@@ -201,28 +212,28 @@
               <div class="stat-grid">
                 <article>
                   <span>Roads</span>
-                  <strong id="roads-stat">-</strong>
+                  <strong id="roads-stat">—</strong>
                 </article>
                 <article>
                   <span>Nodes</span>
-                  <strong id="nodes-stat">-</strong>
+                  <strong id="nodes-stat">—</strong>
                 </article>
                 <article>
                   <span>Edges</span>
-                  <strong id="edges-stat">-</strong>
+                  <strong id="edges-stat">—</strong>
                 </article>
               </div>
             </div>
 
             <div class="preview-shell" id="preview-shell">
-              <p class="preview-empty">SVG preview will appear here.</p>
+              <p class="preview-empty">SVG preview will appear here</p>
               <img id="svg-preview" alt="Generated SVG preview" />
             </div>
 
             <div class="download-row">
-              <button type="button" data-download="map.svg" disabled>Download map.svg</button>
-              <button type="button" data-download="roads.geojson" disabled>Download roads.geojson</button>
-              <button type="button" data-download="graph.json" disabled>Download graph.json</button>
+              <button type="button" data-download="map.svg" disabled>↓ map.svg</button>
+              <button type="button" data-download="roads.geojson" disabled>↓ roads.geojson</button>
+              <button type="button" data-download="graph.json" disabled>↓ graph.json</button>
             </div>
           </div>
         </section>
