@@ -1,3 +1,12 @@
+/**
+ * roadgraph-svg HTTP server
+ *
+ * Serves the web UI (public/) and the /api/generate, /api/health endpoints.
+ * Static files are served from the public directory; no build step required.
+ *
+ * @module server
+ */
+
 import http from "node:http";
 import path from "node:path";
 import { readFile } from "node:fs/promises";

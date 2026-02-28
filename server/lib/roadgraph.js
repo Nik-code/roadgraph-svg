@@ -1,3 +1,12 @@
+/**
+ * Road graph generation: Overpass → extraction → projection → SVG / GeoJSON / graph
+ *
+ * Fetches OSM highway data via Overpass, projects to 2D (Web Mercator), builds
+ * a node/edge graph, and renders semantic SVG with configurable theme.
+ *
+ * @module server/lib/roadgraph
+ */
+
 import { haversineDistanceMeters, toWebMercator } from "./geo.js";
 import { fetchOverpassData } from "./overpass.js";
 
@@ -430,6 +439,20 @@ function renderSvg(projectedRoads, theme, meta) {
 </svg>`;
 }
 
+/**
+ * Generate road map outputs (SVG, GeoJSON, optional graph) from a center point and area.
+ *
+ * @param {object} options - Generation options
+ * @param {number} options.lat - Center latitude
+ * @param {number} options.lon - Center longitude
+ * @param {string} options.areaMode - "radius" or "square"
+ * @param {number} options.radiusMeters - Radius in meters (used when areaMode is "radius")
+ * @param {number} options.squareLengthMeters - Square side length in meters
+ * @param {string[]} options.includeHighways - OSM highway types to include
+ * @param {boolean} options.includeGraph - Whether to include graph.json
+ * @param {object} options.theme - SVG theme (colors, widths, canvas size)
+ * @returns {Promise<{meta, stats, mapSvg, roadsGeojson, graph, overpassQuery}>}
+ */
 export async function generateRoadGraph(options) {
   const {
     lat,

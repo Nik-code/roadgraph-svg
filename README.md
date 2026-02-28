@@ -1,42 +1,76 @@
 # roadgraph-svg
 
-`roadgraph-svg` generates clean, scriptable road maps from OpenStreetMap data.
+Generate clean, scriptable SVG road maps from OpenStreetMap data. Pick a location, define an area (radius or square), choose highway types, and export map.svg, roads.geojson, and optional graph.json.
 
-## What It Does
+## Features
 
-Input:
-- Latitude + Longitude using an embedded dark-mode map picker
-- Area mode: `radius` (meters) or `square` (length in meters)
-- Include filters for highway types
-- SVG theme controls (colors, widths, canvas size)
+- **Interactive map picker** — Select center point via embedded Leaflet map with dark theme
+- **Flexible area modes** — Radius (100–25,000 m) or square (100–30,000 m)
+- **Highway filtering** — Include/exclude motorway, primary, secondary, tertiary, residential, and more
+- **Semantic SVG output** — Paths with IDs (`road-way-<osmWayId>`) and classes (`road-major`, `highway-primary`) for scripting
+- **Multiple outputs** — map.svg, roads.geojson, graph.json (nodes/edges)
+- **Theme control** — Background, stroke colors, widths, canvas size
+- **Zero external dependencies** — Node.js built-in HTTP; Overpass API for data
 
-Process:
-1. Fetches road network data from Overpass API
-2. Extracts highways + metadata (`highway`, `name`, `oneway`, etc.)
-3. Projects geographic coordinates to 2D
-4. Builds graph data (`nodes`, `edges`)
-5. Renders semantic SVG paths with IDs/classes
+## Requirements
 
-Output:
-- `map.svg`
-- `roads.geojson`
-- `graph.json` (optional)
+- **Node.js** 18+
+- Internet access (Overpass API)
 
-## Local Run
+## Quick Start
 
-1. Start local server:
 ```bash
+# Clone the repository
+git clone https://github.com/<your-username>/roadgraph-svg.git
+cd roadgraph-svg
+
+# Install (no runtime deps; optional for scripts)
+npm install
+
+# Start the server
 npm run dev
 ```
 
-2. Open:
-- [http://localhost:8787](http://localhost:8787)
+Open [http://localhost:8787](http://localhost:8787) and use the web UI.
 
-## API (Optional Direct Use)
+### Alternative: Run without npm
 
-`POST /api/generate`
+```bash
+node server/index.js
+```
 
-Example payload:
+Port defaults to `8787`. Override with:
+
+```bash
+PORT=3000 node server/index.js
+```
+
+## Web UI
+
+1. **Set location** — Enter lat/lon or click/drag the marker on the map
+2. **Choose area mode** — Radius or square; adjust the size slider
+3. **Configure extraction** — Toggle highway types; enable/disable graph.json
+4. **Theme** — Set SVG colors and dimensions
+5. **Generate** — Download map.svg, roads.geojson, graph.json
+
+The map shows a live selection overlay (circle for radius, rectangle for square) that updates as you change the mode and size.
+
+## API Reference
+
+### `POST /api/generate`
+
+Generate road map outputs from a JSON payload.
+
+**Request body:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `center` | object | `{ lat, lon }` — center point |
+| `area` | object | `mode`, `radiusMeters`, `squareLengthMeters` |
+| `include` | object | `highways` (array), `graph` (boolean) |
+| `theme` | object | SVG styling options |
+
+**Example:**
 
 ```json
 {
@@ -64,17 +98,95 @@ Example payload:
 }
 ```
 
-## Notes
+**Response (200 OK):**
 
-- This app uses live Overpass API requests, so internet access is required.
-- No runtime dependencies are required beyond Node.js (18+).
-- Generated SVG is structured for scripting:
-  - Path IDs like `road-way-<osmWayId>`
-  - Classes like `road-major`, `road-minor`, `highway-primary`, etc.
+```json
+{
+  "ok": true,
+  "meta": { "elapsedMs": 1234 },
+  "stats": { "roads": 42, "nodes": 128, "edges": 86 },
+  "files": {
+    "map.svg": "<svg>...</svg>",
+    "roads.geojson": "{...}",
+    "graph.json": "{...}"
+  },
+  "overpassQuery": "[out:json]..."
+}
+```
 
-## Deploy Later
+**Errors (400):** Invalid payload; Overpass failure; no highways selected.
 
-This project is deployment-ready as a simple Node app:
-- Entry: `server/index.js`
-- Static client: `public/`
-- Port: `PORT` env var (defaults to `8787`)
+### `GET /api/health`
+
+Health check. Returns `{ ok: true, service: "roadgraph-svg", time: "..." }`.
+
+### Supported highway types
+
+`motorway`, `motorway_link`, `trunk`, `trunk_link`, `primary`, `primary_link`, `secondary`, `secondary_link`, `tertiary`, `tertiary_link`, `residential`, `service`, `unclassified`, `living_street`, `road`
+
+## Output formats
+
+### map.svg
+
+- Semantic path IDs: `road-way-<osmWayId>`
+- Classes: `road-major`, `road-minor`, `road-local`, `highway-<type>` (e.g. `highway-primary`)
+- Data attributes: `data-highway`, `data-name`, `data-oneway` where applicable
+
+### roads.geojson
+
+GeoJSON FeatureCollection with LineString geometries. Each feature has properties: `wayId`, `highway`, `name`, `ref`, `oneway`, `lanes`, `maxspeed`, `surface`, `bridge`, `tunnel`.
+
+### graph.json
+
+```json
+{
+  "nodes": [
+    { "id": "node-123", "x": 100, "y": 200, "lat": 40.73, "lon": -73.93 }
+  ],
+  "edges": [
+    { "from": "node-123", "to": "node-456", "wayId": 789, "highway": "primary" }
+  ]
+}
+```
+
+## Project structure
+
+```
+roadgraph-svg/
+├── README.md
+├── LICENSE
+├── CONTRIBUTING.md
+├── package.json
+├── public/
+│   ├── index.html      # Web UI
+│   ├── styles.css
+│   └── app.js          # Client logic, Leaflet, API calls
+└── server/
+    ├── index.js        # HTTP server, static + API
+    └── lib/
+        ├── geo.js      # Web Mercator, haversine, bounding box
+        ├── overpass.js  # Overpass API client
+        └── roadgraph.js # Extraction, projection, graph, SVG, GeoJSON
+```
+
+## Deployment
+
+The app is a standard Node.js HTTP server:
+
+- **Entry:** `server/index.js`
+- **Static files:** `public/`
+- **Port:** `PORT` env var (default `8787`)
+
+Deploy to any Node-friendly platform (Railway, Render, Fly.io, etc.). No database required; Overpass API calls happen at request time.
+
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
+
+---
+
+**Before publishing:** Update the repository URL in `package.json` (`repository`, `bugs`, `homepage`) to point to your GitHub repo.

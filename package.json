@@ -1,7 +1,7 @@
 {
   "name": "roadgraph-svg",
   "version": "1.0.0",
-  "description": "Generate clean, scriptable SVG road maps from coordinates and OpenStreetMap data.",
+  "description": "Generate clean, scriptable SVG road maps from OpenStreetMap data.",
   "type": "module",
   "main": "server/index.js",
   "scripts": {
@@ -11,11 +11,25 @@
   },
   "keywords": [
     "osm",
+    "openstreetmap",
     "svg",
     "geojson",
     "roads",
-    "overpass"
+    "overpass",
+    "map",
+    "graph"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/username/roadgraph-svg.git"
+  },
+  "bugs": {
+    "url": "https://github.com/username/roadgraph-svg/issues"
+  },
+  "homepage": "https://github.com/username/roadgraph-svg#readme",
+  "engines": {
+    "node": ">=18"
+  }
 }

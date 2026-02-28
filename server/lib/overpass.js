@@ -1,3 +1,12 @@
+/**
+ * Overpass API client for fetching OSM highway data.
+ *
+ * Builds Overpass QL queries for radius or bounding-box areas and fetches
+ * with fallback endpoints.
+ *
+ * @module server/lib/overpass
+ */
+
 import { boundingBoxFromSquare } from "./geo.js";
 
 const OVERPASS_ENDPOINTS = [
@@ -23,6 +32,19 @@ function normalizeHighwayFilter(includeHighways = []) {
   return `["highway"~"^(${cleanValues.join("|")})$"]`;
 }
 
+/**
+ * Build an Overpass QL query string for fetching ways in the given area.
+ *
+ * @param {object} options
+ * @param {number} options.lat - Center latitude
+ * @param {number} options.lon - Center longitude
+ * @param {string} options.areaMode - "radius" or "square"
+ * @param {number} options.radiusMeters - Radius in meters
+ * @param {number} options.squareLengthMeters - Square side length in meters
+ * @param {string[]} options.includeHighways - Highway types to include
+ * @param {number} [options.timeoutSeconds=60] - Overpass timeout
+ * @returns {string} Overpass QL query
+ */
 export function buildOverpassQuery({
   lat,
   lon,
@@ -57,6 +79,13 @@ out body;
 `.trim();
 }
 
+/**
+ * Fetch Overpass API data, trying each endpoint until one succeeds.
+ *
+ * @param {object} options - Same as buildOverpassQuery
+ * @returns {Promise<{endpoint: string, query: string, payload: object}>}
+ * @throws {Error} If all endpoints fail
+ */
 export async function fetchOverpassData(options) {
   const query = buildOverpassQuery(options);
   const errors = [];
