@@ -1,0 +1,21 @@
+{
+  "name": "roadgraph-svg",
+  "version": "1.0.0",
+  "description": "Generate clean, scriptable SVG road maps from coordinates and OpenStreetMap data.",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "node server/index.js",
+    "dev:watch": "node --watch server/index.js",
+    "start": "node server/index.js"
+  },
+  "keywords": [
+    "osm",
+    "svg",
+    "geojson",
+    "roads",
+    "overpass"
+  ],
+  "author": "",
+  "license": "MIT"
+}
