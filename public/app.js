@@ -39,6 +39,7 @@ const elements = {
 
 let map;
 let marker;
+let areaLayer = null;
 let latestFiles = null;
 let previewBlobUrl = null;
 let inputSyncTimer = null;
@@ -50,6 +51,19 @@ function toFixedCoord(value) {
 function parseNumber(value, fallback) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function toRadians(value) {
+  return (value * Math.PI) / 180;
+}
+
+function metersToLatDegrees(meters) {
+  return meters / 111_320;
+}
+
+function metersToLonDegrees(meters, lat) {
+  const safeCos = Math.max(Math.cos(toRadians(lat)), 0.0001);
+  return meters / (111_320 * safeCos);
 }
 
 function selectedAreaMode() {
@@ -86,12 +100,68 @@ function updateAreaValueLabels() {
   }
 }
 
+function currentCenter() {
+  return {
+    lat: parseNumber(elements.lat.value, DEFAULT_CENTER.lat),
+    lon: parseNumber(elements.lon.value, DEFAULT_CENTER.lon),
+  };
+}
+
+function squareBoundsFromCenter(lat, lon, lengthMeters) {
+  const half = lengthMeters / 2;
+  const latOffset = metersToLatDegrees(half);
+  const lonOffset = metersToLonDegrees(half, lat);
+
+  return [
+    [lat - latOffset, lon - lonOffset],
+    [lat + latOffset, lon + lonOffset],
+  ];
+}
+
+function updateAreaOverlay() {
+  if (!map) {
+    return;
+  }
+
+  if (areaLayer) {
+    areaLayer.remove();
+    areaLayer = null;
+  }
+
+  const { lat, lon } = currentCenter();
+  const mode = selectedAreaMode();
+
+  if (mode === "radius") {
+    const radius = parseNumber(elements.radiusInput.value, 1800);
+    areaLayer = L.circle([lat, lon], {
+      radius,
+      color: "#00f1ff",
+      weight: 2,
+      fillColor: "#00f1ff",
+      fillOpacity: 0.08,
+      className: "selection-overlay",
+    });
+  } else {
+    const squareLength = parseNumber(elements.squareInput.value, 2600);
+    areaLayer = L.rectangle(squareBoundsFromCenter(lat, lon, squareLength), {
+      color: "#ff5bd6",
+      weight: 2,
+      fillColor: "#ff5bd6",
+      fillOpacity: 0.08,
+      className: "selection-overlay",
+    });
+  }
+
+  areaLayer.addTo(map);
+}
+
 function updateAreaFieldVisibility() {
   const mode = selectedAreaMode();
   const radiusHidden = mode !== "radius";
   elements.radiusField.classList.toggle("is-hidden", radiusHidden);
   elements.squareField.classList.toggle("is-hidden", !radiusHidden);
   updateAreaValueLabels();
+  updateAreaOverlay();
 }
 
 function updateCenterInputs(lat, lon) {
@@ -110,6 +180,8 @@ function setMapCenter(lat, lon, shouldPan = true) {
   if (shouldPan) {
     map.panTo([clampedLat, clampedLon], { animate: true, duration: 0.35 });
   }
+
+  updateAreaOverlay();
 }
 
 function buildPayload() {
@@ -241,6 +313,7 @@ function bindEvents() {
   [elements.radiusInput, elements.squareInput].forEach((input) => {
     input.addEventListener("input", () => {
       updateAreaValueLabels();
+      updateAreaOverlay();
     });
   });
 
@@ -286,21 +359,33 @@ function initMap() {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO',
   }).addTo(map);
 
+  const markerIcon = L.divIcon({
+    className: "center-marker-wrap",
+    html: '<span class="center-marker-pulse"></span><span class="center-marker-dot"></span>',
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+  });
+
   marker = L.marker([DEFAULT_CENTER.lat, DEFAULT_CENTER.lon], {
     draggable: true,
     autoPan: true,
+    icon: markerIcon,
   }).addTo(map);
 
   marker.on("dragend", () => {
     const position = marker.getLatLng();
     updateCenterInputs(position.lat, position.lng);
+    updateAreaOverlay();
     map.panTo(position, { animate: true, duration: 0.25 });
   });
 
   map.on("click", (event) => {
     marker.setLatLng(event.latlng);
     updateCenterInputs(event.latlng.lat, event.latlng.lng);
+    updateAreaOverlay();
   });
+
+  updateAreaOverlay();
 }
 
 function initialize() {

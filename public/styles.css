@@ -455,6 +455,51 @@ input[type="range"]::-moz-range-thumb {
   color: #c7d5f5 !important;
 }
 
+.selection-overlay {
+  filter: drop-shadow(0 0 14px rgba(0, 241, 255, 0.4));
+}
+
+.center-marker-wrap {
+  background: transparent;
+  border: 0;
+}
+
+.center-marker-pulse,
+.center-marker-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+}
+
+.center-marker-pulse {
+  width: 24px;
+  height: 24px;
+  background: rgba(0, 241, 255, 0.2);
+  border: 1px solid rgba(0, 241, 255, 0.65);
+  animation: markerPulse 1.9s ease-out infinite;
+}
+
+.center-marker-dot {
+  width: 10px;
+  height: 10px;
+  background: #ffd166;
+  box-shadow: 0 0 12px rgba(255, 209, 102, 0.7);
+  border: 1px solid rgba(7, 11, 19, 0.9);
+}
+
+@keyframes markerPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.65);
+    opacity: 0;
+  }
+}
+
 .output-card {
   padding: 0.95rem;
   display: grid;
